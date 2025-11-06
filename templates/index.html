@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Homokapoi - Market Sizing Graph{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Top Navigation Bar -->
+    <div class="top-nav">
+        <div class="nav-brand">
+            <h1>Homokapoi</h1>
+            <span class="nav-subtitle">Market Sizing Tool</span>
+        </div>
+        <div class="nav-auth">
+            <div id="auth-logged-out" class="auth-section">
+                <button id="show-login" class="btn-nav">Log In</button>
+                <button id="show-signup" class="btn-nav btn-primary">Sign Up</button>
+            </div>
+            <div id="auth-logged-in" class="auth-section" style="display: none;">
+                <span id="user-email" class="user-email"></span>
+                <button id="logout-btn" class="btn-nav">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area (Toolbar + Graph) -->
+    <div class="main-content">
+        <!-- Left Toolbar -->
+        <div class="toolbar">
+            <h2>Tools</h2>
+            <button id="create-market-segment" class="tool-btn">
+                <span>📊</span>
+                <span>Market Segment</span>
+            </button>
+            <button id="create-problem" class="tool-btn">
+                <span>💡</span>
+                <span>Problem</span>
+            </button>
+            <hr>
+            <button id="save-graph" class="tool-btn secondary">
+                <span>💾</span>
+                <span>Save Graph</span>
+            </button>
+            <button id="load-graph" class="tool-btn secondary">
+                <span>📂</span>
+                <span>Load Graph</span>
+            </button>
+        </div>
+
+    <!-- Graph Canvas -->
+    <div class="graph-container">
+        <div id="cy"></div>
+        
+        <!-- Node Context Menu -->
+        <div id="node-context-menu" class="context-menu" style="display: none;">
+            <div class="context-menu-item" id="menu-rename">Rename</div>
+            <div class="context-menu-item" id="menu-set-value">Set Value</div>
+            <div class="context-menu-item context-menu-delete" id="menu-delete">Delete</div>
+        </div>
+        
+        <!-- Canvas Context Menu -->
+        <div id="canvas-context-menu" class="context-menu" style="display: none;">
+            <div class="context-menu-item" id="menu-create-segment">📊 Create Market Segment</div>
+            <div class="context-menu-item" id="menu-create-problem">💡 Create Problem</div>
+        </div>
+        
+        <!-- Edge Context Menu -->
+        <div id="edge-context-menu" class="context-menu" style="display: none;">
+            <div class="context-menu-item" id="menu-modify-edge">Edit Value</div>
+            <div class="context-menu-item context-menu-delete" id="menu-delete-edge">Delete</div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Value Input Modal -->
+<div id="value-modal" class="modal">
+    <div class="modal-content">
+        <h3>Set Market Segment Size</h3>
+        <label for="segment-value">Number of potential buyers:</label>
+        <input type="number" id="segment-value" placeholder="e.g., 1000000">
+        <div class="modal-actions">
+            <button id="save-value" class="btn-primary">Save</button>
+            <button id="cancel-value" class="btn-secondary">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edge Weight Modal -->
+<div id="edge-modal" class="modal">
+    <div class="modal-content">
+        <h3>Set Edge Value</h3>
+        <label for="edge-weight">Dollar amount per user (willingness to pay):</label>
+        <input type="number" id="edge-weight" placeholder="e.g., 50.00" step="0.01">
+        <label for="edge-description">Description (optional):</label>
+        <textarea id="edge-description" placeholder="Why does this segment value this problem?"></textarea>
+        <div class="modal-actions">
+            <button id="save-edge" class="btn-primary">Save</button>
+            <button id="cancel-edge" class="btn-secondary">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Node Name Modal -->
+<div id="name-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="name-modal-title">Name Your Node</h3>
+        <label for="node-name">Node name:</label>
+        <input type="text" id="node-name" placeholder="e.g., Daily Active Users">
+        <div class="modal-actions">
+            <button id="save-name" class="btn-primary">Save</button>
+            <button id="cancel-name" class="btn-secondary">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div id="login-modal" class="modal">
+    <div class="modal-content">
+        <h3>Log In to Your Account</h3>
+        <div id="login-error" class="error-message" style="display: none;"></div>
+        <label for="login-email">Email:</label>
+        <input type="email" id="login-email" placeholder="your@email.com" required>
+        <label for="login-password">Password:</label>
+        <input type="password" id="login-password" placeholder="••••••••" required>
+        <div class="modal-actions">
+            <button id="login-submit" class="btn-primary">Log In</button>
+            <button id="cancel-login" class="btn-secondary">Cancel</button>
+        </div>
+        <div class="modal-footer">
+            <p>Don't have an account? <a href="#" id="switch-to-signup">Sign up</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signup-modal" class="modal">
+    <div class="modal-content">
+        <h3>Create Your Account</h3>
+        <div id="signup-error" class="error-message" style="display: none;"></div>
+        <div id="signup-success" class="success-message" style="display: none;"></div>
+        <label for="signup-email">Email:</label>
+        <input type="email" id="signup-email" placeholder="your@email.com" required>
+        <label for="signup-password">Password:</label>
+        <input type="password" id="signup-password" placeholder="••••••••" required>
+        <label for="signup-password-confirm">Confirm Password:</label>
+        <input type="password" id="signup-password-confirm" placeholder="••••••••" required>
+        <div class="modal-actions">
+            <button id="signup-submit" class="btn-primary">Sign Up</button>
+            <button id="cancel-signup" class="btn-secondary">Cancel</button>
+        </div>
+        <div class="modal-footer">
+            <p>Already have an account? <a href="#" id="switch-to-login">Log in</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Load Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Load Cytoscape.js from CDN -->
+<script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+{% endblock %}
+

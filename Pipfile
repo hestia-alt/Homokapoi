@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "<5.0,>=4.2"
+supabase = ">=2.0"
+python-decouple = ">=3.8"
+whitenoise = ">=6.5"
+gunicorn = ">=21.0"
+djangorestframework = ">=3.14"
+django-cors-headers = ">=4.3"
+
+[dev-packages]
+
+[requires]
+python_version = "3.14"
