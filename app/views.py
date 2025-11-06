@@ -95,7 +95,7 @@ def graphs_list(request):
                 )
             
             data = {
-                'name': request.data.get('name', 'Untitled Graph'),
+                'name': request.data.get('name', 'NAME YOUR GRAPH'),
                 'description': request.data.get('description', ''),
                 'user_id': user_id
             }
@@ -133,10 +133,11 @@ def graphs_list(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'PATCH', 'DELETE'])
 def graph_detail(request, graph_id):
     """
     GET: Get a specific graph with all its nodes and edges
+    PATCH: Update a graph (e.g., change name)
     DELETE: Delete a graph
     """
     if request.method == 'GET':
@@ -166,6 +167,41 @@ def graph_detail(request, graph_id):
             logger.error(f"❌ Error fetching graph {graph_id}: {str(e)}")
             logger.error(traceback.format_exc())
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    elif request.method == 'PATCH':
+        try:
+            logger.info(f"✏️ Updating graph: {graph_id}")
+            logger.info(f"📥 Update data: {request.data}")
+            
+            # Get user_id from auth token
+            user_id = get_user_from_token(request)
+            if not user_id:
+                return Response(
+                    {'error': 'Authentication required'}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            data = {}
+            if 'name' in request.data:
+                data['name'] = request.data['name']
+            if 'description' in request.data:
+                data['description'] = request.data['description']
+            
+            if not data:
+                return Response({'error': 'No fields to update'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update graph (RLS will ensure user can only update their own graphs)
+            response = supabase.table('graphs').update(data).eq('id', graph_id).execute()
+            
+            if not response.data:
+                return Response({'error': 'Graph not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            logger.info(f"✅ Graph updated: {graph_id}")
+            return Response(response.data[0])
+        except Exception as e:
+            logger.error(f"❌ Error updating graph {graph_id}: {str(e)}")
+            logger.error(traceback.format_exc())
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'DELETE':
         try:

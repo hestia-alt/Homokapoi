@@ -6,8 +6,10 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow: hidden;
+    background-color: #F4F1EA; /* Woolen White */
+    color: #6B4F3B; /* Anchor Bronze */
 }
 
 /* App Layout */
@@ -16,142 +18,211 @@ body {
     flex-direction: column;
     height: 100vh;
     width: 100vw;
+    position: relative;
 }
 
-/* Top Navigation Bar */
+/* Top Navigation Bar - Floating Popup Style */
 .top-nav {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: #2c3e50;
-    color: white;
-    padding: 15px 30px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    gap: 15px;
+    background: rgba(244, 241, 234, 0.95); /* Woolen White with transparency */
+    backdrop-filter: blur(10px);
+    color: #6B4F3B; /* Anchor Bronze */
+    padding: 8px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(216, 216, 216, 0.5); /* Washed Stone border */
+    z-index: 1000;
+    max-width: fit-content;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .nav-brand h1 {
-    font-size: 24px;
+    font-size: 16px;
     margin: 0;
+    font-weight: 600;
 }
 
 .nav-subtitle {
-    font-size: 12px;
-    color: #95a5a6;
-    margin-left: 10px;
+    font-size: 11px;
+    color: #D8D8D8; /* Washed Stone */
+    opacity: 0.7;
+}
+
+.graph-name-container {
+    display: flex;
+    align-items: center;
+    max-width: 200px;
+}
+
+.graph-name-input {
+    width: 100%;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(216, 216, 216, 0.5);
+    border-radius: 6px;
+    color: #6B4F3B;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.graph-name-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #FAD7C0; /* Soft Ember */
+    box-shadow: 0 0 0 2px rgba(250, 215, 192, 0.3);
+}
+
+.graph-name-input::placeholder {
+    color: rgba(107, 79, 59, 0.4);
 }
 
 .nav-auth {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .auth-section {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .user-email {
-    color: #ecf0f1;
-    margin-right: 10px;
+    color: #6B4F3B; /* Anchor Bronze */
+    margin-right: 4px;
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 .btn-nav {
-    padding: 8px 16px;
-    border: 1px solid #34495e;
-    background: transparent;
-    color: white;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border: 1px solid rgba(216, 216, 216, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    color: #6B4F3B; /* Anchor Bronze */
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     transition: all 0.2s;
 }
 
 .btn-nav:hover {
-    background: #34495e;
+    background: rgba(250, 215, 192, 0.3); /* Soft Ember with transparency */
+    border-color: #FAD7C0;
 }
 
 .btn-nav.btn-primary {
-    background: #3498db;
-    border-color: #3498db;
+    background: #B8E6B8; /* Pastel Green */
+    border-color: #A8D5BA; /* Soft Sage Green */
+    color: #6B4F3B;
 }
 
 .btn-nav.btn-primary:hover {
-    background: #2980b9;
-    border-color: #2980b9;
+    background: #A8D5BA; /* Soft Sage Green */
+    color: #6B4F3B;
 }
 
 /* Main Content Area (Toolbar + Graph) */
 .main-content {
-    display: flex;
-    flex: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
 }
 
-/* Left Toolbar */
+/* Left Toolbar - Floating Popup Style */
 .toolbar {
-    width: 200px;
-    background: #2c3e50;
-    color: white;
-    padding: 20px;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: auto;
+    min-width: 120px;
+    background: rgba(244, 241, 234, 0.95); /* Woolen White with transparency */
+    backdrop-filter: blur(10px);
+    color: #6B4F3B; /* Anchor Bronze */
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(216, 216, 216, 0.5); /* Washed Stone border */
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    flex-shrink: 0;
+    gap: 8px;
+    z-index: 1000;
 }
 
 .toolbar h2 {
-    font-size: 18px;
-    margin-bottom: 10px;
+    font-size: 12px;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .tool-btn {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px;
-    background: #34495e;
-    color: white;
-    border: none;
-    border-radius: 6px;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #6B4F3B; /* Anchor Bronze */
+    border: 1px solid rgba(216, 216, 216, 0.3);
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
+    font-size: 13px;
+    transition: all 0.2s;
 }
 
 .tool-btn:hover {
-    background: #455a74;
-}
-
-.tool-btn.secondary {
-    background: #16a085;
-}
-
-.tool-btn.secondary:hover {
-    background: #1abc9c;
+    background: rgba(250, 215, 192, 0.4); /* Soft Ember */
+    border-color: #FAD7C0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .tool-btn span:first-child {
-    font-size: 20px;
+    font-size: 16px;
+}
+
+.tool-btn span:last-child {
+    font-weight: 500;
 }
 
 .toolbar hr {
     border: none;
-    border-top: 1px solid #455a74;
-    margin: 10px 0;
+    border-top: 1px solid rgba(216, 216, 216, 0.3);
+    margin: 4px 0;
 }
 
 /* Graph Container */
 .graph-container {
-    flex: 1;
-    background: #ecf0f1;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #F4F1EA; /* Woolen White */
 }
 
 #cy {
     width: 100%;
     height: 100%;
+    background: #F4F1EA; /* Woolen White */
 }
 
 /* Modal Styles */
@@ -163,9 +234,10 @@ body {
     top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(2px);
 }
 
 .modal.active {
@@ -173,33 +245,48 @@ body {
 }
 
 .modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
+    background: #F4F1EA; /* Woolen White */
+    padding: 32px;
+    border-radius: 12px;
     min-width: 400px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid #D8D8D8; /* Washed Stone */
 }
 
 .modal-content h3 {
-    margin-bottom: 20px;
-    color: #2c3e50;
+    margin-bottom: 24px;
+    color: #6B4F3B; /* Anchor Bronze */
+    font-weight: 600;
+    font-size: 20px;
 }
 
 .modal-content label {
     display: block;
     margin-bottom: 8px;
-    color: #34495e;
+    color: #6B4F3B; /* Anchor Bronze */
     font-weight: 500;
+    font-size: 14px;
 }
 
 .modal-content input,
 .modal-content textarea {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #bdc3c7;
-    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #D8D8D8; /* Washed Stone */
+    border-radius: 8px;
     font-size: 14px;
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #F4F1EA; /* Woolen White */
+    color: #6B4F3B; /* Anchor Bronze */
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+    outline: none;
+    border-color: #FAD7C0; /* Soft Ember */
+    box-shadow: 0 0 0 3px rgba(250, 215, 192, 0.2);
 }
 
 .modal-content textarea {
@@ -215,72 +302,84 @@ body {
 
 .btn-primary,
 .btn-secondary {
-    padding: 10px 20px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    transition: background 0.2s;
+    font-weight: 600;
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
+    transition: all 0.2s;
 }
 
 .btn-primary {
-    background: #3498db;
-    color: white;
+    background: #B8E6B8; /* Pastel Green */
+    color: #6B4F3B; /* Anchor Bronze */
+    box-shadow: 0 2px 4px rgba(184, 230, 184, 0.3);
 }
 
 .btn-primary:hover {
-    background: #2980b9;
+    background: #A8D5BA; /* Soft Sage Green - slightly darker on hover */
+    color: #6B4F3B; /* Anchor Bronze */
+    box-shadow: 0 4px 8px rgba(168, 213, 186, 0.4);
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #95a5a6;
-    color: white;
+    background: #D8D8D8; /* Washed Stone */
+    color: #6B4F3B; /* Anchor Bronze */
 }
 
 .btn-secondary:hover {
-    background: #7f8c8d;
+    background: #EBCDC2; /* Faded Clay */
+    color: #6B4F3B; /* Anchor Bronze */
 }
 
 /* Modal Footer */
 .modal-footer {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid #ecf0f1;
+    border-top: 1px solid #D8D8D8; /* Washed Stone */
     text-align: center;
 }
 
 .modal-footer p {
     margin: 0;
-    color: #7f8c8d;
+    color: #6B4F3B; /* Anchor Bronze */
     font-size: 14px;
+    opacity: 0.7;
 }
 
 .modal-footer a {
-    color: #3498db;
+    color: #6B4F3B; /* Anchor Bronze */
     text-decoration: none;
+    font-weight: 500;
 }
 
 .modal-footer a:hover {
     text-decoration: underline;
+    color: #EBCDC2; /* Faded Clay */
 }
 
 /* Error and Success Messages */
 .error-message {
-    background: #e74c3c;
-    color: white;
+    background: #EBCDC2; /* Faded Clay */
+    color: #6B4F3B; /* Anchor Bronze */
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 15px;
     font-size: 14px;
+    border: 1px solid #D8D8D8; /* Washed Stone */
 }
 
 .success-message {
-    background: #27ae60;
-    color: white;
+    background: #FFEECB; /* Pale Flame */
+    color: #6B4F3B; /* Anchor Bronze */
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 15px;
     font-size: 14px;
+    border: 1px solid #FAD7C0; /* Soft Ember */
 }
 
 /* Cytoscape Node Styles (defined in JS) */
@@ -288,66 +387,275 @@ body {
 /* Edge drawing visual feedback */
 .edge-source {
     border-width: 4px !important;
-    border-color: #f39c12 !important;
+    border-color: #FAD7C0 !important; /* Soft Ember */
 }
 
-/* Helper text hint */
+/* Helper text hint - removed for minimal design */
 .graph-container::after {
-    content: 'Tip: Shift+Click to draw edges between nodes';
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(44, 62, 80, 0.9);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 4px;
-    font-size: 12px;
-    pointer-events: none;
+    display: none;
 }
 
 /* Context Menu */
 .context-menu {
     position: absolute;
-    background-color: white;
-    border: 2px solid #2c3e50;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background-color: #F4F1EA; /* Woolen White */
+    border: 1px solid #D8D8D8; /* Washed Stone */
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     z-index: 10000;
-    min-width: 140px;
+    min-width: 180px;
     overflow: hidden;
+    padding: 4px 0;
 }
 
 .context-menu-item {
-    padding: 12px 16px;
+    padding: 10px 16px;
     cursor: pointer;
     font-size: 14px;
-    color: #2c3e50;
-    transition: background-color 0.2s;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-.context-menu-item:last-child {
+    font-weight: 500;
+    color: #6B4F3B; /* Anchor Bronze */
+    transition: background-color 0.15s, color 0.15s;
     border-bottom: none;
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
 }
 
 .context-menu-item:hover {
-    background-color: #3498db;
-    color: white;
+    background-color: #FFEECB; /* Pale Flame */
+    color: #6B4F3B; /* Anchor Bronze */
 }
 
 .context-menu-item:active {
-    background-color: #2980b9;
+    background-color: #FAD7C0; /* Soft Ember */
 }
 
 .context-menu-delete {
-    color: #e74c3c;
-    border-top: 1px solid #ecf0f1;
-    margin-top: 5px;
-    padding-top: 12px;
+    color: #FF4444; /* Fiery Red */
+    border-top: 1px solid rgba(255, 68, 68, 0.2); /* Fiery Red border */
+    margin-top: 4px;
+    padding-top: 10px;
+    font-weight: 600;
 }
 
 .context-menu-delete:hover {
-    background-color: #e74c3c;
-    color: white;
+    background-color: #FFE5E5; /* Light red background */
+    color: #CC0000; /* Darker red on hover */
+    border-top-color: rgba(255, 68, 68, 0.4);
+}
+
+/* ============================================================
+   NOTIFICATION SYSTEM - Gentle Alerts
+   ============================================================ */
+
+.notification-container {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.notification {
+    background: rgba(255, 68, 68, 0.95); /* Fiery Red with transparency */
+    color: #F4F1EA; /* Woolen White */
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    pointer-events: auto;
+    animation: slideDown 0.3s ease-out;
+    border: 1px solid rgba(255, 68, 68, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.notification-success {
+    background: rgba(168, 213, 186, 0.95); /* Soft Sage Green */
+    color: #6B4F3B; /* Anchor Bronze */
+    border-color: rgba(168, 213, 186, 0.8);
+}
+
+.notification-info {
+    background: rgba(255, 238, 203, 0.95); /* Pale Flame */
+    color: #6B4F3B; /* Anchor Bronze */
+    border-color: rgba(255, 238, 203, 0.8);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+.notification.removing {
+    animation: slideUp 0.3s ease-out forwards;
+}
+
+/* ============================================================
+   VISUAL HEARTH EFFECTS - Sacred Fire Animations
+   ============================================================ */
+
+/* Pulsing Ember Animation for Parent Nodes (Coal) */
+/* SVG-compatible: animating opacity and filter effects */
+@keyframes pulse-ember {
+    0%, 100% {
+        opacity: 0.85;
+        filter: drop-shadow(0 0 4px rgba(217, 74, 30, 0.4));
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 8px rgba(217, 74, 30, 0.7));
+    }
+}
+
+/* More Intense Glow for Leaf Nodes (Hot Coals) */
+@keyframes pulse-hot-coal {
+    0%, 100% {
+        opacity: 0.9;
+        filter: drop-shadow(0 0 6px rgba(217, 74, 30, 0.8));
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 12px rgba(217, 74, 30, 1));
+    }
+}
+
+/* Heat Distortion Effect for Leaf Nodes */
+@keyframes heat-distortion {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+}
+
+/* Flowing Fire Animation for Leaf-to-Problem Edges */
+@keyframes flow-fire {
+    0% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: -15;
+    }
+}
+
+/* Hearth Pulse Animation for Problem Nodes */
+/* SVG-compatible: animating opacity and filter effects */
+@keyframes hearth-pulse {
+    0%, 100% {
+        opacity: 0.9;
+        filter: drop-shadow(0 0 6px rgba(217, 74, 30, 0.6));
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 10px rgba(255, 168, 46, 0.8));
+    }
+}
+
+/* Hearth Receiving Energy - Stronger Pulse */
+@keyframes hearth-receiving {
+    0%, 100% {
+        opacity: 0.95;
+        filter: drop-shadow(0 0 8px rgba(255, 168, 46, 0.9));
+        transform: scale(1);
+    }
+    30% {
+        opacity: 1;
+        filter: drop-shadow(0 0 15px rgba(255, 168, 46, 1));
+        transform: scale(1.03);
+    }
+    60% {
+        opacity: 0.95;
+        filter: drop-shadow(0 0 8px rgba(255, 168, 46, 0.9));
+        transform: scale(1);
+    }
+}
+
+/* Apply animations to SVG elements based on data attributes */
+/* More flexible selectors to handle Cytoscape's structure */
+#cy svg g[data-hearth-type="parent-coal"] circle,
+#cy svg g[data-hearth-type="parent-coal"] ellipse,
+#cy svg g[data-hearth-type="parent-coal"] > circle,
+#cy svg g[data-hearth-type="parent-coal"] > ellipse {
+    animation: pulse-ember 5s infinite ease-in-out !important;
+}
+
+#cy svg g[data-hearth-type="hot-coal"] circle,
+#cy svg g[data-hearth-type="hot-coal"] ellipse,
+#cy svg g[data-hearth-type="hot-coal"] > circle,
+#cy svg g[data-hearth-type="hot-coal"] > ellipse {
+    animation: pulse-hot-coal 3s infinite ease-in-out !important;
+}
+
+#cy svg g[data-hearth-type="hot-coal-connected"] circle,
+#cy svg g[data-hearth-type="hot-coal-connected"] ellipse,
+#cy svg g[data-hearth-type="hot-coal-connected"] > circle,
+#cy svg g[data-hearth-type="hot-coal-connected"] > ellipse {
+    animation: pulse-hot-coal 3s infinite ease-in-out, heat-distortion 4s infinite ease-in-out !important;
+}
+
+#cy svg g[data-hearth-type="hearth-dormant"] rect,
+#cy svg g[data-hearth-type="hearth-dormant"] polygon,
+#cy svg g[data-hearth-type="hearth-dormant"] > rect,
+#cy svg g[data-hearth-type="hearth-dormant"] > polygon {
+    animation: hearth-pulse 3s infinite ease-in-out !important;
+}
+
+#cy svg g[data-hearth-type="hearth-active"] rect,
+#cy svg g[data-hearth-type="hearth-active"] polygon,
+#cy svg g[data-hearth-type="hearth-active"] > rect,
+#cy svg g[data-hearth-type="hearth-active"] > polygon {
+    animation: hearth-receiving 2s infinite ease-in-out !important;
+}
+
+#cy svg g[data-hearth-type="fire-spirit"] path,
+#cy svg g[data-hearth-type="fire-spirit"] > path {
+    animation: flow-fire 1s linear infinite !important;
+    stroke-dasharray: 10 5 !important;
+}
+
+/* Particle Flow Animation Stub (will be handled by JS) */
+.particle-flow {
+    animation: particle-move 2s linear infinite;
+}
+
+@keyframes particle-move {
+    0% {
+        opacity: 0;
+        transform: translateX(0);
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(100%);
+    }
 }
 

@@ -4,11 +4,16 @@
 
 {% block content %}
 <div class="app-container">
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+    
     <!-- Top Navigation Bar -->
     <div class="top-nav">
         <div class="nav-brand">
             <h1>Homokapoi</h1>
-            <span class="nav-subtitle">Market Sizing Tool</span>
+        </div>
+        <div class="graph-name-container">
+            <input type="text" id="graph-name" class="graph-name-input" placeholder="Untitled Graph" value="Untitled Graph">
         </div>
         <div class="nav-auth">
             <div id="auth-logged-out" class="auth-section">
@@ -34,15 +39,6 @@
             <button id="create-problem" class="tool-btn">
                 <span>💡</span>
                 <span>Problem</span>
-            </button>
-            <hr>
-            <button id="save-graph" class="tool-btn secondary">
-                <span>💾</span>
-                <span>Save Graph</span>
-            </button>
-            <button id="load-graph" class="tool-btn secondary">
-                <span>📂</span>
-                <span>Load Graph</span>
             </button>
         </div>
 

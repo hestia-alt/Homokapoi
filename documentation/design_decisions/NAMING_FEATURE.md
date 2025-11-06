@@ -3,6 +3,8 @@
 ## Overview
 Users can now name nodes when creating them and rename existing nodes by double-clicking. This makes the market sizing graphs more readable and meaningful.
 
+11-05-2025
+
 ## Implementation Details
 
 ### Frontend Changes

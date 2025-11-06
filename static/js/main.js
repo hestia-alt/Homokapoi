@@ -18,6 +18,9 @@ let isRenamingNode = false;
 let contextMenuNode = null;
 let contextMenuEdge = null;
 let canvasMenuPosition = null;
+let inlineEditInput = null;
+let editingNode = null;
+let lastMousePosition = null; // Track mouse position for node creation
 
 // Initialize Supabase client
 function initializeSupabase() {
@@ -69,6 +72,41 @@ async function api(endpoint, options = {}) {
     }
     
     return data;
+}
+
+// ============================================================
+// NOTIFICATION SYSTEM - Gentle Alerts
+// ============================================================
+
+function showNotification(message, type = 'error', duration = 5000) {
+    const container = document.getElementById('notification-container');
+    if (!container) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type === 'success' ? 'notification-success' : type === 'info' ? 'notification-info' : ''}`;
+    notification.textContent = message;
+    
+    container.appendChild(notification);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        notification.classList.add('removing');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, duration);
+    
+    // Allow manual dismissal on click
+    notification.addEventListener('click', () => {
+        notification.classList.add('removing');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    });
 }
 
 // ============================================================
@@ -244,7 +282,7 @@ async function handleLogout() {
         
     } catch (error) {
         console.error('Logout error:', error);
-        alert('Error logging out. Please try again.');
+        showNotification('Error logging out. Please try again.');
     }
 }
 
@@ -363,6 +401,16 @@ class MarketCalculator {
 
         console.log('✅ Recalculation complete');
         this.updateDisplayedValues();
+        
+        // Update hearth visual effects after recalculation
+        setTimeout(() => {
+            if (typeof updateNodeAnimations === 'function') {
+                updateNodeAnimations();
+            }
+            if (typeof updateEdgeAnimations === 'function') {
+                updateEdgeAnimations();
+            }
+        }, 200);
     }
 
     // Update the displayed labels with calculated values
@@ -394,25 +442,49 @@ class MarketCalculator {
                 // Check if connected to a problem node
                 const connectedToProblem = this.cy.edges(`[source="${node.id()}"][type="value_edge"]`).length > 0;
                 
+                // Check if has any connections (incoming or outgoing)
+                const hasOutgoingEdges = this.cy.edges(`[source="${node.id()}"]`).length > 0;
+                const hasIncomingEdges = this.cy.edges(`[target="${node.id()}"]`).length > 0;
+                const hasConnections = hasOutgoingEdges || hasIncomingEdges;
+                
                 if (isLeaf) {
                     node.removeClass('parent-node');
                     
-                    // Priority: Connected to problem (GREEN) > Has value (ORANGE) > Default (RED)
-                    if (connectedToProblem) {
-                        node.addClass('connected-to-problem');
-                        node.removeClass('valued-leaf');
-                    } else if (hasValue) {
-                        node.addClass('valued-leaf');
-                        node.removeClass('connected-to-problem');
-                    } else {
+                    // Check for no value and no connections - light red
+                    if (!hasValue && !hasConnections) {
+                        node.addClass('no-value-no-connections');
                         node.removeClass('valued-leaf');
                         node.removeClass('connected-to-problem');
                     }
+                    // Priority: Connected to problem (GREEN) > Has value (ORANGE) > Default (RED)
+                    else if (connectedToProblem) {
+                        node.addClass('connected-to-problem');
+                        node.removeClass('valued-leaf');
+                        node.removeClass('no-value-no-connections');
+                    } else if (hasValue) {
+                        node.addClass('valued-leaf');
+                        node.removeClass('connected-to-problem');
+                        node.removeClass('no-value-no-connections');
+                    } else {
+                        node.removeClass('valued-leaf');
+                        node.removeClass('connected-to-problem');
+                        node.removeClass('no-value-no-connections');
+                    }
                 } else {
-                    // Parent node - deep blue square
+                    // Parent node - circle
                     node.addClass('parent-node');
                     node.removeClass('valued-leaf');
                     node.removeClass('connected-to-problem');
+                    node.removeClass('no-value-no-connections');
+                }
+            } else if (type === 'problem') {
+                // Check if problem node is connected to any leaf nodes
+                const connectedToLeaf = this.cy.edges(`[target="${node.id()}"][type="value_edge"]`).length > 0;
+                
+                if (connectedToLeaf) {
+                    node.addClass('connected-to-leaf');
+                } else {
+                    node.removeClass('connected-to-leaf');
                 }
             }
         });
@@ -435,105 +507,172 @@ function initializeCytoscape() {
         container: document.getElementById('cy'),
         
         style: [
-            // Market Segment Nodes - Default (Leaf without value) - RED
+            // Market Segment Nodes - Default (Leaf without value and no connections) - Light Red
+            // Base state: starting point, no value, no connections
+            {
+                selector: 'node[type="market_segment"].no-value-no-connections',
+                style: {
+                    'background-color': '#FFCCCB', // Light Red
+                    'label': 'data(displayLabel)',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '100px',
+                    'color': '#6B4F3B', // Anchor Bronze
+                    'font-size': '12px',
+                    'font-weight': '500',
+                    'font-family': 'Inter, Helvetica Neue, sans-serif',
+                    'width': '120px',
+                    'height': '120px',
+                    'border-width': 0,
+                    'shape': 'ellipse' // Circle by default
+                }
+            },
+            // Market Segment Nodes - Default (Leaf without value) - Soft Ember
+            // Base state: starting point, muted tone
             {
                 selector: 'node[type="market_segment"]',
                 style: {
-                    'background-color': '#E74C3C',
+                    'background-color': '#FAD7C0', // Soft Ember - muted, starting point
                     'label': 'data(displayLabel)',
                     'text-valign': 'center',
                     'text-halign': 'center',
                     'text-wrap': 'wrap',
-                    'text-max-width': '85px',
-                    'color': '#fff',
-                    'font-size': '11px',
-                    'width': '100px',
-                    'height': '100px',
-                    'border-width': 2,
-                    'border-color': '#C0392B',
+                    'text-max-width': '100px',
+                    'color': '#6B4F3B', // Anchor Bronze
+                    'font-size': '12px',
+                    'font-weight': '500',
+                    'font-family': 'Inter, Helvetica Neue, sans-serif',
+                    'width': '120px',
+                    'height': '120px',
+                    'border-width': 0,
+                    'shape': 'ellipse' // Circle by default
                 }
             },
-            // Leaf with value - ORANGE
+            // Leaf with value - Hot Coal (brighter red-orange, glowing)
+            // Progress state: active hot coals
             {
                 selector: 'node[type="market_segment"].valued-leaf',
                 style: {
-                    'background-color': '#E67E22',
-                    'border-color': '#D35400',
+                    'background-color': '#E5501E', // Bright red-orange - hot coal
+                    'border-width': 3,
+                    'border-color': '#D94A1E', // Deep red-orange border
+                    'shape': 'ellipse', // Circle
+                    'color': '#FFFFFF' // White text
                 }
             },
-            // Leaf connected to problem - GREEN
+            // Leaf connected to problem - Active Hot Coal (brightest)
+            // Success state: fully activated, connected to hearth
             {
                 selector: 'node[type="market_segment"].connected-to-problem',
                 style: {
-                    'background-color': '#27AE60',
-                    'border-color': '#1E8449',
+                    'background-color': '#D94A1E', // Deep red-orange - active hot coal
+                    'border-width': 4,
+                    'border-color': '#FFA82E', // Bright orange border - fire spirit
+                    'shape': 'ellipse', // Circle
+                    'color': '#FFFFFF' // White text
                 }
             },
-            // Parent nodes - DEEP BLUE square
+            // Parent nodes - Charcoal Coal with Pulsing Embers
+            // The foundational coals (Oikos)
             {
                 selector: 'node[type="market_segment"].parent-node',
                 style: {
-                    'background-color': '#2C3E50',
-                    'border-color': '#1A252F',
-                    'border-width': 3,
-                    'shape': 'round-rectangle'
+                    'background-color': '#2C2C2C', // Dark charcoal/coal
+                    'border-width': 2,
+                    'border-color': '#1A1A1A', // Very dark outline
+                    'shape': 'ellipse', // Circle
+                    'color': '#D94A1E' // Amber red text
                 }
             },
-            // Problem Nodes - square shape
+            // Problem Nodes - Default (not connected) - Dormant Hearth
             {
                 selector: 'node[type="problem"]',
                 style: {
-                    'background-color': '#E85D75',
+                    'background-color': '#D94A1E', // Deep amber red - hearth base
                     'label': 'data(displayLabel)',
                     'text-valign': 'center',
                     'text-halign': 'center',
                     'text-wrap': 'wrap',
-                    'text-max-width': '85px',
-                    'color': '#fff',
-                    'font-size': '11px',
-                    'width': '100px',
-                    'height': '100px',
-                    'border-width': 2,
-                    'border-color': '#C23850',
+                    'text-max-width': '100px',
+                    'color': '#F4F1EA', // Woolen White - light text on dark hearth
+                    'font-size': '12px',
+                    'font-weight': '500',
+                    'font-family': 'Inter, Helvetica Neue, sans-serif',
+                    'width': '120px',
+                    'height': '120px',
+                    'border-width': 3,
+                    'border-color': 'rgba(217, 74, 30, 0.6)', // Deep red-orange border
                     'shape': 'round-rectangle'
                 }
             },
-            // Segment Hierarchy Edges
+            // Problem Nodes - Connected to leaf - Active Hearth Receiving Fire
+            {
+                selector: 'node[type="problem"].connected-to-leaf',
+                style: {
+                    'background-color': '#D94A1E', // Deep amber red
+                    'border-width': 4,
+                    'border-color': 'rgba(255, 168, 46, 0.9)', // Bright orange border - receiving energy
+                    'shape': 'round-rectangle'
+                }
+            },
+            // Segment Hierarchy Edges - Path of Potential (dark with ember particles)
+            // The path from Oikos (foundational coals) to leaf nodes
             {
                 selector: 'edge[type="segment_hierarchy"]',
                 style: {
-                    'width': 2,
-                    'line-color': '#95A5A6',
-                    'target-arrow-color': '#95A5A6',
+                    'width': 2.5,
+                    'line-color': '#464646', // Dark gray - subtle path
+                    'target-arrow-color': '#464646', // Dark gray arrow
                     'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier'
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': [40, -40],
+                    'control-point-weights': [0.25, 0.75],
+                    'opacity': 0.6,
+                    'line-dash-pattern': [8, 4], // Dashed pattern for particle effect base
+                    'transition-property': 'opacity',
+                    'transition-duration': '0.3s'
                 }
             },
-            // Value Edges
+            // Value Edges - Fire Spirit (flowing energy from leaf to hearth)
+            // The flowing fire anima from hot coals to the prytaneion
             {
                 selector: 'edge[type="value_edge"]',
                 style: {
-                    'width': 3,
-                    'line-color': '#27AE60',
-                    'target-arrow-color': '#27AE60',
+                    'width': 5,
+                    'line-color': '#FFA82E', // Bright fiery orange - fire spirit
+                    'target-arrow-color': '#FFA82E', // Bright orange arrow
                     'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier',
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': [40, -40],
+                    'control-point-weights': [0.25, 0.75],
                     'label': 'data(weight)',
-                    'font-size': '10px',
-                    'color': '#27AE60'
+                    'font-size': '11px',
+                    'font-weight': '600',
+                    'color': '#6B4F3B', // Anchor Bronze
+                    'text-background-color': '#F4F1EA', // Woolen White
+                    'text-background-opacity': 0.9,
+                    'text-background-padding': '4px',
+                    'text-background-shape': 'roundrectangle',
+                    'opacity': 0.95,
+                    'line-dash-pattern': [10, 5], // Dashed pattern for flow animation
+                    'transition-property': 'width, opacity',
+                    'transition-duration': '0.3s'
                 }
             },
-            // Temporary edge (while drawing)
+            // Temporary edge (while drawing) - Pale Flame dashed
             {
                 selector: 'edge.temporary-edge',
                 style: {
-                    'width': 2,
-                    'line-color': '#3498db',
+                    'width': 3,
+                    'line-color': '#FFEECB', // Pale Flame
                     'line-style': 'dashed',
-                    'target-arrow-color': '#3498db',
+                    'target-arrow-color': '#FFEECB', // Pale Flame
                     'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier',
-                    'opacity': 0.6
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': [40, -40],
+                    'control-point-weights': [0.25, 0.75],
+                    'opacity': 0.5
                 }
             },
             // Temporary target node (invisible)
@@ -556,8 +695,330 @@ function initializeCytoscape() {
     // Initialize calculator
     calculator = new MarketCalculator(cy);
     
+    // Apply hearth visual effects
+    applyHearthEffects();
+    
     setupEventHandlers();
 }
+
+// ============================================================
+// HEARTH VISUAL EFFECTS - Apply Sacred Fire Animations
+// ============================================================
+
+function applyHearthEffects() {
+    if (!cy) return;
+    
+    // Use MutationObserver to watch for SVG changes and reapply animations
+    const container = cy.container();
+    if (!container) return;
+    
+    let observer = null;
+    
+    const setupObserver = () => {
+        const svg = container.querySelector('svg');
+        if (svg && !observer) {
+            observer = new MutationObserver(() => {
+                // Debounce rapid changes
+                clearTimeout(window.hearthAnimationTimeout);
+                window.hearthAnimationTimeout = setTimeout(() => {
+                    updateNodeAnimations();
+                    updateEdgeAnimations();
+                }, 150);
+            });
+            
+            observer.observe(svg, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['id', 'class']
+            });
+        }
+    };
+    
+    // Apply animations to all nodes when Cytoscape is ready
+    cy.ready(() => {
+        setTimeout(() => {
+            setupObserver();
+            updateNodeAnimations();
+            updateEdgeAnimations();
+        }, 300);
+    });
+    
+    // Update animations when nodes are added
+    cy.on('add', 'node', function(evt) {
+        setTimeout(() => {
+            updateNodeAnimations();
+            updateEdgeAnimations();
+        }, 150);
+    });
+    
+    // Update animations when edges are added
+    cy.on('add', 'edge', function(evt) {
+        setTimeout(() => {
+            updateEdgeAnimations();
+            updateNodeAnimations();
+        }, 150);
+    });
+    
+    // Update animations when nodes are removed
+    cy.on('remove', 'node', function(evt) {
+        setTimeout(() => {
+            updateNodeAnimations();
+            updateEdgeAnimations();
+        }, 150);
+    });
+    
+    // Update animations when edges are removed
+    cy.on('remove', 'edge', function(evt) {
+        setTimeout(() => {
+            updateEdgeAnimations();
+            updateNodeAnimations();
+        }, 150);
+    });
+    
+    // Update animations when graph layout changes or nodes are repositioned
+    cy.on('layoutstop', function() {
+        setTimeout(() => {
+            updateNodeAnimations();
+            updateEdgeAnimations();
+        }, 150);
+    });
+    
+    // Also update on render events
+    cy.on('render', function() {
+        setTimeout(() => {
+            updateNodeAnimations();
+            updateEdgeAnimations();
+        }, 50);
+    });
+}
+
+function updateNodeAnimations() {
+    if (!cy) return;
+    
+    // Wait for Cytoscape to finish rendering
+    setTimeout(() => {
+        const container = cy.container();
+        if (!container) return;
+        
+        const svg = container.querySelector('svg');
+        if (!svg) return;
+        
+        // Clear all previous hearth types
+        svg.querySelectorAll('[data-hearth-type]').forEach(el => {
+            el.removeAttribute('data-hearth-type');
+        });
+        
+        // Apply animations to parent nodes (charcoal coals with embers)
+        const parentNodes = cy.nodes('.parent-node');
+        parentNodes.forEach((node, index) => {
+            applyAnimationToNode(node.id(), 'pulse-ember', index * 0.5, 5);
+        });
+        
+        // Apply hot coal animation to leaf nodes connected to problems
+        const connectedLeafNodes = cy.nodes('.connected-to-problem');
+        connectedLeafNodes.forEach((node, index) => {
+            // Apply hot-coal first, then heat-distortion will upgrade it to hot-coal-connected
+            applyAnimationToNode(node.id(), 'pulse-hot-coal', 0, 3);
+            applyAnimationToNode(node.id(), 'heat-distortion', 0, 4);
+        });
+        
+        // Apply hot coal animation to valued leaf nodes
+        const valuedLeafNodes = cy.nodes('.valued-leaf');
+        valuedLeafNodes.forEach((node, index) => {
+            applyAnimationToNode(node.id(), 'pulse-hot-coal', index * 0.4, 3);
+        });
+        
+        // Apply hearth pulse animation to problem nodes
+        const problemNodes = cy.nodes('[type="problem"]');
+        problemNodes.forEach((node, index) => {
+            const animationName = node.hasClass('connected-to-leaf') ? 'hearth-receiving' : 'hearth-pulse';
+            applyAnimationToNode(node.id(), animationName, index * 0.5, 3);
+        });
+    }, 100);
+}
+
+function applyAnimationToNode(nodeId, animationName, delay, duration) {
+    const container = cy.container();
+    if (!container) return;
+    
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    
+    // Try multiple strategies to find the node element
+    let nodeGroup = null;
+    
+    // Strategy 1: Direct ID lookup
+    nodeGroup = svg.querySelector(`#${nodeId}`);
+    
+    // Strategy 2: Find by data-id attribute
+    if (!nodeGroup) {
+        const allGroups = svg.querySelectorAll('g');
+        for (let g of allGroups) {
+            if (g.id === nodeId || g.getAttribute('data-id') === nodeId) {
+                nodeGroup = g;
+                break;
+            }
+        }
+    }
+    
+    // Strategy 3: Find by Cytoscape's cy-node class and check data
+    if (!nodeGroup) {
+        const cyNodes = svg.querySelectorAll('g.cy-node');
+        for (let nodeEl of cyNodes) {
+            // Cytoscape stores node ID in the element's data or as a class
+            if (nodeEl.id === nodeId || 
+                nodeEl.classList.contains(`cy-node-${nodeId}`) ||
+                nodeEl.querySelector(`[data-id="${nodeId}"]`)) {
+                nodeGroup = nodeEl;
+                break;
+            }
+        }
+    }
+    
+    // Strategy 4: Try finding by the node's position if we have the node object
+    if (!nodeGroup && cy) {
+        const node = cy.getElementById(nodeId);
+        if (node && node.length > 0) {
+            // Use Cytoscape's rendered position to find the element
+            const pos = node.renderedPosition();
+            const cyNodes = svg.querySelectorAll('g.cy-node');
+            for (let nodeEl of cyNodes) {
+                const transform = nodeEl.getAttribute('transform');
+                if (transform && transform.includes(`translate(${Math.round(pos.x)},${Math.round(pos.y)})`)) {
+                    nodeGroup = nodeEl;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (nodeGroup) {
+        applyHearthType(nodeGroup, animationName);
+    }
+}
+
+function applyHearthType(nodeGroup, animationName) {
+    // Remove previous hearth types
+    nodeGroup.removeAttribute('data-hearth-type');
+    
+    // Map animation names to hearth types
+    const hearthTypeMap = {
+        'pulse-ember': 'parent-coal',
+        'pulse-hot-coal': 'hot-coal',
+        'heat-distortion': null, // Applied together with hot-coal
+        'hearth-pulse': 'hearth-dormant',
+        'hearth-receiving': 'hearth-active'
+    };
+    
+    const hearthType = hearthTypeMap[animationName];
+    if (hearthType) {
+        nodeGroup.setAttribute('data-hearth-type', hearthType);
+    }
+    
+    // Special handling for connected leaf nodes (hot-coal + heat-distortion)
+    if (animationName === 'heat-distortion') {
+        // This will be applied together with hot-coal
+        const existingType = nodeGroup.getAttribute('data-hearth-type');
+        if (existingType === 'hot-coal') {
+            nodeGroup.setAttribute('data-hearth-type', 'hot-coal-connected');
+        }
+    }
+}
+
+function applyAnimationToEdge(edgeId, animationName) {
+    const container = cy.container();
+    if (!container) return;
+    
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    
+    const edgeGroup = svg.querySelector(`#${edgeId}`) || 
+                      svg.querySelector(`[id="${edgeId}"]`);
+    
+    if (!edgeGroup) {
+        // Try finding by Cytoscape's internal structure
+        const cyEdges = svg.querySelectorAll('g.cy-edge');
+        for (let edgeEl of cyEdges) {
+            if (edgeEl.id === edgeId || edgeEl.getAttribute('data-id') === edgeId) {
+                edgeEl.setAttribute('data-hearth-type', 'fire-spirit');
+                return;
+            }
+        }
+        return;
+    }
+    
+    if (animationName === 'flow-fire') {
+        edgeGroup.setAttribute('data-hearth-type', 'fire-spirit');
+    }
+}
+
+function updateEdgeAnimations() {
+    if (!cy) return;
+    
+    // Wait for Cytoscape to finish rendering
+    setTimeout(() => {
+        const container = cy.container();
+        if (!container) return;
+        
+        const svg = container.querySelector('svg');
+        if (!svg) return;
+        
+        // Ensure defs exists for filters
+        let defs = svg.querySelector('defs');
+        if (!defs) {
+            defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            svg.insertBefore(defs, svg.firstChild);
+        }
+        
+        // Create fire glow filter if it doesn't exist
+        let glowFilter = defs.querySelector('#fire-glow-filter');
+        if (!glowFilter) {
+            glowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+            glowFilter.setAttribute('id', 'fire-glow-filter');
+            glowFilter.setAttribute('x', '-50%');
+            glowFilter.setAttribute('y', '-50%');
+            glowFilter.setAttribute('width', '200%');
+            glowFilter.setAttribute('height', '200%');
+            
+            const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+            feGaussianBlur.setAttribute('stdDeviation', '3');
+            feGaussianBlur.setAttribute('result', 'coloredBlur');
+            
+            const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+            const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+            feMergeNode1.setAttribute('in', 'coloredBlur');
+            const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+            feMergeNode2.setAttribute('in', 'SourceGraphic');
+            
+            feMerge.appendChild(feMergeNode1);
+            feMerge.appendChild(feMergeNode2);
+            glowFilter.appendChild(feGaussianBlur);
+            glowFilter.appendChild(feMerge);
+            defs.appendChild(glowFilter);
+        }
+        
+        // Apply flowing fire animation to value edges (leaf to problem)
+        const valueEdges = cy.edges('[type="value_edge"]');
+        valueEdges.forEach((edge, index) => {
+            const edgeId = edge.id();
+            applyAnimationToEdge(edgeId, 'flow-fire');
+            
+            // Also apply glow filter
+            const edgeGroup = svg.querySelector(`#${edgeId}`) || svg.querySelector(`[id="${edgeId}"]`);
+            if (edgeGroup) {
+                const path = edgeGroup.querySelector('path');
+                if (path) {
+                    path.setAttribute('filter', 'url(#fire-glow-filter)');
+                }
+            }
+        });
+    }, 100);
+}
+
+// Note: Particle flow animation would require calculating bezier paths
+// This is a placeholder for future enhancement - the visual foundation is set
+// with the dashed lines and color scheme on hierarchy edges
 
 // Setup event handlers
 function setupEventHandlers() {
@@ -571,6 +1032,19 @@ function setupEventHandlers() {
         } else {
             completeEdgeDrawing(evt.target);
         }
+    });
+    
+    // Double-click on node - rename it inline
+    cy.on('dbltap', 'node', function(evt) {
+        evt.preventDefault();
+        
+        // Don't rename if we're in edge drawing mode
+        if (edgeDrawingMode) {
+            return;
+        }
+        
+        const node = evt.target;
+        startInlineEdit(node);
     });
     
     // Right-click on node - show context menu
@@ -597,6 +1071,10 @@ function setupEventHandlers() {
             }
             hideContextMenu();
             hideCanvasContextMenu();
+            // Cancel inline editing if active
+            if (inlineEditInput && inlineEditInput.style.display !== 'none') {
+                cancelInlineEdit();
+            }
         }
     });
     
@@ -609,10 +1087,26 @@ function setupEventHandlers() {
         }
     });
     
-    // Mouse move - update temporary edge position
-    cy.on('mousemove', function(evt) {
-        if (edgeDrawingMode && temporaryEdge) {
-            const pos = evt.position;
+    // Mouse move - update temporary edge position and track mouse for node creation
+    // Use mouse move on the container for better tracking
+    const cyContainer = document.getElementById('cy');
+    cyContainer.addEventListener('mousemove', function(evt) {
+        // Track mouse position for node creation
+        const containerRect = cyContainer.getBoundingClientRect();
+        const renderedX = evt.clientX - containerRect.left;
+        const renderedY = evt.clientY - containerRect.top;
+        
+        // Convert rendered coordinates to graph coordinates
+        const pan = cy.pan();
+        const zoom = cy.zoom();
+        lastMousePosition = {
+            x: (renderedX - pan.x) / zoom,
+            y: (renderedY - pan.y) / zoom
+        };
+        
+        if (edgeDrawingMode && edgeSourceNode) {
+            // Use the tracked mouse position (already converted to graph coordinates)
+            const pos = lastMousePosition || { x: 0, y: 0 };
             
             // Create or update a temporary target node at mouse position
             let tempTarget = cy.getElementById('temp-target');
@@ -628,7 +1122,9 @@ function setupEventHandlers() {
             }
             
             // Update the temporary edge to point to the temp target
-            temporaryEdge.move({ target: 'temp-target' });
+            if (temporaryEdge) {
+                temporaryEdge.move({ target: 'temp-target' });
+            }
         }
     });
     
@@ -641,8 +1137,9 @@ function setupEventHandlers() {
     // Toolbar buttons
     document.getElementById('create-market-segment').addEventListener('click', createMarketSegmentNode);
     document.getElementById('create-problem').addEventListener('click', createProblemNode);
-    document.getElementById('save-graph').addEventListener('click', saveGraph);
-    document.getElementById('load-graph').addEventListener('click', loadGraph);
+    // Note: save-graph and load-graph buttons removed (graphs auto-save with authentication)
+    // document.getElementById('save-graph').addEventListener('click', saveGraph);
+    // document.getElementById('load-graph').addEventListener('click', loadGraph);
     
     // Modal buttons
     document.getElementById('save-value').addEventListener('click', saveNodeValue);
@@ -684,12 +1181,20 @@ function setupEventHandlers() {
     // Canvas context menu items
     document.getElementById('menu-create-segment').addEventListener('click', function() {
         hideCanvasContextMenu();
-        createMarketSegmentNode();
+        if (canvasMenuPosition) {
+            createMarketSegmentNode(canvasMenuPosition);
+        } else {
+            createMarketSegmentNode();
+        }
     });
     
     document.getElementById('menu-create-problem').addEventListener('click', function() {
         hideCanvasContextMenu();
-        createProblemNode();
+        if (canvasMenuPosition) {
+            createProblemNode(canvasMenuPosition);
+        } else {
+            createProblemNode();
+        }
     });
     
     // Edge context menu items
@@ -748,7 +1253,7 @@ function setupEventHandlers() {
 }
 
 // Create market segment node
-async function createMarketSegmentNode() {
+async function createMarketSegmentNode(position = null) {
     if (!currentGraphId) {
         // Create a default graph first
         const graphData = await api('/api/graphs/', {
@@ -756,16 +1261,68 @@ async function createMarketSegmentNode() {
             body: JSON.stringify({ name: 'New Market Analysis' })
         });
         currentGraphId = graphData.id;
+        
+        // Update graph name input
+        const graphNameInput = document.getElementById('graph-name');
+        if (graphNameInput && graphData.name) {
+            graphNameInput.value = graphData.name;
+        }
     }
     
-    // Store pending node data and open name modal
-    pendingNodeData = {
-        type: 'market_segment',
-        x_position: Math.random() * 500 + 100,
-        y_position: Math.random() * 400 + 100
-    };
+    // Generate a default name with a counter
+    const existingNodes = cy.nodes('[type="market_segment"]');
+    const defaultName = existingNodes.length > 0 
+        ? `Market Segment ${existingNodes.length + 1}`
+        : 'Market Segment';
     
-    openNameModal('Name Market Segment');
+    // Use provided position, mouse position, or center of viewport
+    let nodePosition;
+    if (position) {
+        nodePosition = position;
+    } else if (lastMousePosition) {
+        nodePosition = lastMousePosition;
+    } else {
+        // Fallback: center of viewport
+        const container = cy.container();
+        const containerRect = container.getBoundingClientRect();
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const pan = cy.pan();
+        const zoom = cy.zoom();
+        nodePosition = {
+            x: (centerX - pan.x) / zoom,
+            y: (centerY - pan.y) / zoom
+        };
+    }
+    
+    // Create node immediately with default name
+    const nodeData = await api('/api/nodes/', {
+        method: 'POST',
+        body: JSON.stringify({
+            graph_id: currentGraphId,
+            type: 'market_segment',
+            label: defaultName,
+            x_position: nodePosition.x,
+            y_position: nodePosition.y
+        })
+    });
+    
+    cy.add({
+        group: 'nodes',
+        data: {
+            id: nodeData.id,
+            type: nodeData.type,
+            label: nodeData.label,
+            value: nodeData.value,
+            displayLabel: nodeData.label
+        },
+        position: {
+            x: nodeData.x_position,
+            y: nodeData.y_position
+        }
+    });
+    
+    calculator.recalculateAll();
 }
 
 // Actually create the node after naming
@@ -801,23 +1358,75 @@ async function finishCreateNode(name) {
 }
 
 // Create problem node
-async function createProblemNode() {
+async function createProblemNode(position = null) {
     if (!currentGraphId) {
         const graphData = await api('/api/graphs/', {
             method: 'POST',
             body: JSON.stringify({ name: 'New Market Analysis' })
         });
         currentGraphId = graphData.id;
+        
+        // Update graph name input
+        const graphNameInput = document.getElementById('graph-name');
+        if (graphNameInput && graphData.name) {
+            graphNameInput.value = graphData.name;
+        }
     }
     
-    // Store pending node data and open name modal
-    pendingNodeData = {
-        type: 'problem',
-        x_position: Math.random() * 500 + 100,
-        y_position: Math.random() * 400 + 100
-    };
+    // Generate a default name with a counter
+    const existingNodes = cy.nodes('[type="problem"]');
+    const defaultName = existingNodes.length > 0 
+        ? `Problem ${existingNodes.length + 1}`
+        : 'Problem';
     
-    openNameModal('Name Problem');
+    // Use provided position, mouse position, or center of viewport
+    let nodePosition;
+    if (position) {
+        nodePosition = position;
+    } else if (lastMousePosition) {
+        nodePosition = lastMousePosition;
+    } else {
+        // Fallback: center of viewport
+        const container = cy.container();
+        const containerRect = container.getBoundingClientRect();
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const pan = cy.pan();
+        const zoom = cy.zoom();
+        nodePosition = {
+            x: (centerX - pan.x) / zoom,
+            y: (centerY - pan.y) / zoom
+        };
+    }
+    
+    // Create node immediately with default name
+    const nodeData = await api('/api/nodes/', {
+        method: 'POST',
+        body: JSON.stringify({
+            graph_id: currentGraphId,
+            type: 'problem',
+            label: defaultName,
+            x_position: nodePosition.x,
+            y_position: nodePosition.y
+        })
+    });
+    
+    cy.add({
+        group: 'nodes',
+        data: {
+            id: nodeData.id,
+            type: nodeData.type,
+            label: nodeData.label,
+            value: nodeData.value,
+            displayLabel: nodeData.label
+        },
+        position: {
+            x: nodeData.x_position,
+            y: nodeData.y_position
+        }
+    });
+    
+    calculator.recalculateAll();
 }
 
 // Modal functions
@@ -901,7 +1510,7 @@ async function saveNodeName() {
     const name = document.getElementById('node-name').value.trim();
     
     if (!name) {
-        alert('Please enter a name for the node');
+        showNotification('Please enter a name for the node');
         return;
     }
     
@@ -920,6 +1529,111 @@ async function saveNodeName() {
         await finishCreateNode(name);
         closeNameModal();
     }
+}
+
+// Inline editing functions
+function startInlineEdit(node) {
+    // Cancel any existing inline edit
+    if (inlineEditInput) {
+        cancelInlineEdit();
+    }
+    
+    editingNode = node;
+    const nodePos = node.renderedPosition();
+    const nodeWidth = node.width();
+    
+    // Create or get inline edit input
+    if (!inlineEditInput) {
+        inlineEditInput = document.createElement('input');
+        inlineEditInput.type = 'text';
+        inlineEditInput.className = 'inline-edit-input';
+        inlineEditInput.style.cssText = `
+            position: absolute;
+            background: #F4F1EA;
+            border: 2px solid #6B4F3B;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: Inter, Helvetica Neue, sans-serif;
+            color: #6B4F3B;
+            z-index: 10001;
+            outline: none;
+            text-align: center;
+            min-width: 80px;
+            max-width: 200px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        `;
+        document.body.appendChild(inlineEditInput);
+        
+        // Handle Enter key
+        inlineEditInput.addEventListener('keydown', function(evt) {
+            if (evt.key === 'Enter') {
+                evt.preventDefault();
+                finishInlineEdit();
+            } else if (evt.key === 'Escape') {
+                evt.preventDefault();
+                cancelInlineEdit();
+            }
+        });
+        
+        // Handle blur
+        inlineEditInput.addEventListener('blur', function() {
+            finishInlineEdit();
+        });
+    }
+    
+    // Set position and value
+    const cyContainer = document.getElementById('cy').getBoundingClientRect();
+    const zoom = cy.zoom();
+    
+    // Position the input at the center-top of the node
+    inlineEditInput.value = node.data('label');
+    inlineEditInput.style.left = (cyContainer.left + nodePos.x - 50) + 'px';
+    inlineEditInput.style.top = (cyContainer.top + nodePos.y - nodeWidth / 2 - 25) + 'px';
+    inlineEditInput.style.fontSize = (12 / zoom) + 'px';
+    inlineEditInput.style.display = 'block';
+    inlineEditInput.focus();
+    inlineEditInput.select();
+}
+
+async function finishInlineEdit() {
+    if (!editingNode || !inlineEditInput) {
+        return;
+    }
+    
+    const newName = inlineEditInput.value.trim();
+    
+    if (!newName) {
+        cancelInlineEdit();
+        return;
+    }
+    
+    if (newName !== editingNode.data('label')) {
+        // Update node label
+        try {
+            await api(`/api/nodes/${editingNode.id()}/`, {
+                method: 'PATCH',
+                body: JSON.stringify({ label: newName })
+            });
+            
+            editingNode.data('label', newName);
+            calculator.recalculateAll();
+        } catch (error) {
+            console.error('Error updating node name:', error);
+            showNotification('Failed to update node name. Please try again.');
+        }
+    }
+    
+    cancelInlineEdit();
+}
+
+function cancelInlineEdit() {
+    if (inlineEditInput) {
+        inlineEditInput.style.display = 'none';
+        inlineEditInput.value = '';
+    }
+    editingNode = null;
 }
 
 // Update node position after drag
@@ -967,7 +1681,7 @@ async function deleteNode(node) {
         console.log(`Node ${nodeId} deleted successfully`);
     } catch (error) {
         console.error('Error deleting node:', error);
-        alert('Failed to delete node. Please try again.');
+        showNotification('Failed to delete node. Please try again.');
     }
 }
 
@@ -990,7 +1704,7 @@ async function deleteEdge(edge) {
         console.log(`Edge ${edgeId} deleted successfully`);
     } catch (error) {
         console.error('Error deleting edge:', error);
-        alert('Failed to delete edge. Please try again.');
+        showNotification('Failed to delete edge. Please try again.');
     }
 }
 
@@ -1087,13 +1801,24 @@ function startEdgeDrawing(sourceNode) {
     // Change cursor
     document.getElementById('cy').style.cursor = 'crosshair';
     
-    // Create a temporary edge that will follow the mouse
+    // Get source node position
+    const sourcePos = sourceNode.position();
+    
+    // Create temporary target node at source position initially (will be updated on mousemove)
+    const tempTarget = cy.add({
+        group: 'nodes',
+        data: { id: 'temp-target' },
+        position: { x: sourcePos.x + 100, y: sourcePos.y + 100 }, // Offset to make edge visible
+        classes: 'temp-target-node'
+    });
+    
+    // Create the temporary edge immediately so it's visible
     temporaryEdge = cy.add({
         group: 'edges',
         data: {
             id: 'temp-edge',
             source: sourceNode.id(),
-            target: sourceNode.id(),
+            target: 'temp-target',
             isTemporary: true
         },
         classes: 'temporary-edge'
@@ -1112,7 +1837,7 @@ async function completeEdgeDrawing(targetNode) {
     
     // Check if we have a graph ID
     if (!currentGraphId) {
-        alert('Error: No active graph. Please create nodes first to initialize a graph.');
+        showNotification('Error: No active graph. Please create nodes first to initialize a graph.');
         cancelEdgeDrawing();
         return;
     }
@@ -1139,7 +1864,7 @@ async function completeEdgeDrawing(targetNode) {
         finalSourceId = targetNode.id();  // Market segment is now source
         finalTargetId = sourceNode.id();  // Problem is now target
     } else {
-        alert('Invalid edge connection!\n\nValid connections:\n- Market Segment → Market Segment (hierarchy)\n- Market Segment → Problem (value edge)');
+        showNotification('Invalid edge connection! Valid connections: Market Segment → Market Segment (hierarchy) or Market Segment → Problem (value edge)');
         cancelEdgeDrawing();
         return;
     }
@@ -1147,7 +1872,7 @@ async function completeEdgeDrawing(targetNode) {
     // Check if an edge already exists between these nodes
     const existingEdge = cy.edges(`[source="${finalSourceId}"][target="${finalTargetId}"]`);
     if (existingEdge.length > 0) {
-        alert('An edge already exists between these nodes.');
+        showNotification('An edge already exists between these nodes.');
         cancelEdgeDrawing();
         return;
     }
@@ -1214,7 +1939,8 @@ async function completeEdgeDrawing(targetNode) {
         
     } catch (error) {
         console.error('Error creating edge:', error);
-        alert('Failed to create edge.\n\nError: ' + (error.error || error.message || 'Unknown error') + '\n\nCheck browser console for details.');
+        const errorMsg = error.error || error.message || 'Unknown error';
+        showNotification('Failed to create edge: ' + errorMsg);
     }
     
     cancelEdgeDrawing();
@@ -1245,7 +1971,7 @@ function cancelEdgeDrawing() {
 
 // Save/Load functions
 async function saveGraph() {
-    alert('Graph auto-saves on every change!');
+    showNotification('Graph auto-saves on every change!', 'info', 3000);
 }
 
 async function loadGraph() {
@@ -1262,6 +1988,12 @@ async function loadGraph() {
 function loadGraphData(graphData) {
     cy.elements().remove();
     currentGraphId = graphData.graph.id;
+    
+    // Update graph name input field
+    const graphNameInput = document.getElementById('graph-name');
+    if (graphNameInput && graphData.graph.name) {
+        graphNameInput.value = graphData.graph.name;
+    }
     
     // Add nodes
     graphData.nodes.forEach(node => {
@@ -1359,6 +2091,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (event === 'SIGNED_OUT') {
                 currentUser = null;
                 updateAuthUI(false);
+            }
+        });
+    }
+    
+    // Graph name input blur handler - save when user clicks out
+    const graphNameInput = document.getElementById('graph-name');
+    if (graphNameInput) {
+        graphNameInput.addEventListener('blur', async function() {
+            const newName = this.value.trim();
+            if (!newName) {
+                // Restore previous name if empty
+                const graphData = await api(`/api/graphs/${currentGraphId}/`);
+                if (graphData && graphData.graph) {
+                    this.value = graphData.graph.name || 'Untitled Graph';
+                }
+                return;
+            }
+            
+            if (currentGraphId && newName) {
+                try {
+                    await api(`/api/graphs/${currentGraphId}/`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ name: newName })
+                    });
+                    console.log('Graph name updated:', newName);
+                } catch (error) {
+                    console.error('Error updating graph name:', error);
+                    // Restore previous name on error
+                    const graphData = await api(`/api/graphs/${currentGraphId}/`);
+                    if (graphData && graphData.graph) {
+                        this.value = graphData.graph.name || 'Untitled Graph';
+                    }
+                }
+            }
+        });
+        
+        // Also save on Enter key
+        graphNameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                this.blur(); // Trigger blur which will save
             }
         });
     }
